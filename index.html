@@ -1892,55 +1892,52 @@
             });
         }
 
-        function openLeaderboard() {
+        async function openLeaderboard() {
             const modal = document.getElementById('leaderboardModal');
             if (!modal) return;
             closeFloatingMenu();
-            renderLeaderboard();
+            await renderLeaderboard(true);
             modal.classList.add('active');
         }
 
-        function renderLeaderboard() {
+        async function fetchSupabaseUsers() {
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, {
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                if (!response.ok) throw new Error('Supabase request failed');
+                return await response.json();
+            } catch (error) {
+                console.error('拉取排行榜数据失败:', error);
+                return null;
+            }
+        }
+
+        async function renderLeaderboard(showLoading = false) {
             const listEl = document.getElementById('leaderboardList');
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            
             if (!listEl) return;
+            if (showLoading) {
+                listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">排行榜加载中...</div>';
+            }
             
-            if (users.length === 0) {
+            const users = await fetchSupabaseUsers();
+            if (!users || users.length === 0) {
                 listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">暂无用户数据</div>';
                 return;
             }
             
-            const rankings = users.map(user => {
-                const wallet = Number(user.wallet || 0);
-                const holdings = JSON.parse(localStorage.getItem('holdings_' + user.id) || '[]');
-                const owned = JSON.parse(localStorage.getItem('assets_' + user.id) || '[]');
-                const userStockData = safeGetUserStockData(user.id);
-                
-                let stockAssets = 0;
-                holdings.forEach(holding => {
-                    const marketStocks = userStockData[holding.market] || [];
-                    const stock = marketStocks.find(s => s.symbol === holding.symbol);
-                    const currentPrice = stock ? stock.price : holding.avgPrice;
-                    stockAssets += holding.shares * currentPrice;
-                });
-                
-                let physicalAssets = 0;
-                owned.forEach(asset => {
-                    physicalAssets += (asset.price || 0) * 10000;
-                });
-                
-                const totalAssets = wallet + stockAssets + physicalAssets;
-                
-                return {
+            const rankings = users
+                .map(user => ({
                     id: user.id,
                     name: user.name || user.email || '未命名用户',
-                    total: totalAssets
-                };
-            }).sort((a, b) => b.total - a.total);
+                    total: Number(user.wallet || 0)
+                }))
+                .sort((a, b) => b.total - a.total);
             
             listEl.innerHTML = '';
-            
             rankings.forEach((user, index) => {
                 const item = document.createElement('div');
                 item.className = 'leaderboard-item';
@@ -1953,16 +1950,6 @@
                 `;
                 listEl.appendChild(item);
             });
-        }
-
-        function safeGetUserStockData(userId) {
-            try {
-                const stored = localStorage.getItem('stockData_' + userId);
-                return stored ? JSON.parse(stored) : cloneStockData();
-            } catch (err) {
-                console.error('解析用户行情数据失败:', err);
-                return cloneStockData();
-            }
         }
 
         function formatCurrency(value) {
