@@ -283,6 +283,7 @@
         const SUPABASE_URL = 'https://kgiqattlefummjksdils.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaXFhdHRsZWZ1bW1qa3NkaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MzgzNjUsImV4cCI6MjA3ODIxNDM2NX0.FgktM4KyOmdnu49hauZm0TszCeG9aJ7AqT7d4inofpE';
         let cachedUsers = [];
+        const ADMIN_SESSION_KEY = 'robotcat_admin_authed';
 
         function showToast(message) {
             const container = document.getElementById('toastContainer');
@@ -303,6 +304,7 @@
                 renderUsers();
                 renderLeaderboard();
                 showToast('登录成功');
+                sessionStorage.setItem(ADMIN_SESSION_KEY, 'true');
             } else {
                 showToast('账号或密码错误');
             }
@@ -313,6 +315,7 @@
             document.getElementById('loginCard').style.display = 'block';
             document.getElementById('adminAccount').value = '';
             document.getElementById('adminPassword').value = '';
+            sessionStorage.removeItem(ADMIN_SESSION_KEY);
             showSection('users');
         }
 
@@ -442,6 +445,18 @@
                 listEl.appendChild(item);
             });
         }
+
+        async function restoreSessionIfNeeded() {
+            if (sessionStorage.getItem(ADMIN_SESSION_KEY) === 'true') {
+                document.getElementById('loginCard').style.display = 'none';
+                document.getElementById('adminApp').style.display = 'flex';
+                await fetchUsers();
+                renderUsers();
+                renderLeaderboard();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', restoreSessionIfNeeded);
 
     </script>
 </body>

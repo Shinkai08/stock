@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>股票模拟交易系统</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
             margin: 0;
@@ -1199,6 +1200,12 @@
             ]
         };
 
+        const SUPABASE_URL = 'https://kgiqattlefummjksdils.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtnaXFhdHRsZWZ1bW1qa3NkaWxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI2MzgzNjUsImV4cCI6MjA3ODIxNDM2NX0.FgktM4KyOmdnu49hauZm0TszCeG9aJ7AqT7d4inofpE';
+        const SUPABASE_TABLE = 'users';
+        const CURRENT_USER_KEY = 'robotcat_trader_user_id';
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
         // 全局变量
         let currentUser = null;
         let currentMarket = '美股';
@@ -1268,8 +1275,8 @@
         window.onload = function() {
             initAuth();
             loadOwnedAssets();
+            restoreUserSession();
         };
-
         // 认证相关
         function initAuth() {
             const authForm = document.getElementById('authForm');
@@ -1305,44 +1312,89 @@
         }
 
         async function fetchSupabaseUserByEmail(email) {
-            if (!email) return null;
+            if (!supabaseClient || !email) return null;
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*&email=eq.${encodeURIComponent(email)}`, {
-                    headers: {
-                        apikey: SUPABASE_ANON_KEY,
-                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`
+                const { data, error } = await supabaseClient
+                    .from(SUPABASE_TABLE)
+                    .select('*')
+                    .eq('email', email)
+                    .maybeSingle();
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        return null;
                     }
-                });
-                if (!response.ok) throw new Error('Supabase 查询失败');
-                const data = await response.json();
-                return Array.isArray(data) && data.length > 0 ? data[0] : null;
-            } catch (error) {
-                console.error('查询用户失败:', error);
+                    console.error('查询用户失败:', error);
+                    return null;
+                }
+                
+                return data || null;
+            } catch (err) {
+                console.error('查询用户失败:', err);
+                return null;
+            }
+        }
+
+        async function fetchSupabaseUserById(id) {
+            if (!supabaseClient || !id) return null;
+            try {
+                const { data, error } = await supabaseClient
+                    .from(SUPABASE_TABLE)
+                    .select('*')
+                    .eq('id', id)
+                    .maybeSingle();
+                
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        return null;
+                    }
+                    console.error('按ID查询用户失败:', error);
+                    return null;
+                }
+                return data || null;
+            } catch (err) {
+                console.error('按ID查询用户失败:', err);
                 return null;
             }
         }
 
         async function createSupabaseUser(user) {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-                method: 'POST',
-                headers: {
-                    apikey: SUPABASE_ANON_KEY,
-                    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    Prefer: 'return=minimal'
-                },
-                body: JSON.stringify({
+            if (!supabaseClient) throw new Error('Supabase 未初始化');
+            const { error } = await supabaseClient
+                .from(SUPABASE_TABLE)
+                .insert({
                     id: user.id,
                     name: user.name,
                     email: user.email,
                     password: user.password,
                     wallet: user.wallet,
                     created_at: user.createdAt
-                })
-            });
-            if (!response.ok) {
-                throw new Error('Supabase 创建用户失败');
+                });
+            
+            if (error) {
+                console.error('创建用户失败:', error);
+                throw error;
             }
+        }
+
+        function upsertLocalUser(user) {
+            if (!user) return;
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const index = users.findIndex(u => u.id === user.id);
+            const payload = {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                password: user.password || '',
+                wallet: user.wallet,
+                createdAt: user.createdAt || user.created_at
+            };
+            if (index >= 0) {
+                users[index] = payload;
+            } else {
+                users.push(payload);
+            }
+            localStorage.setItem('users', JSON.stringify(users));
         }
 
         async function handleAuth(e) {
@@ -1363,6 +1415,7 @@
                         wallet: remoteUser.wallet,
                         createdAt: remoteUser.created_at
                     };
+                    upsertLocalUser(currentUser);
                     showApp();
                 } else {
                     alert('邮箱或密码错误！');
@@ -1395,9 +1448,7 @@
                     return;
                 }
                 
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                users.push(newUser);
-                localStorage.setItem('users', JSON.stringify(users));
+                upsertLocalUser(newUser);
                 
                 currentUser = newUser;
                 showApp();
@@ -1408,6 +1459,8 @@
             document.getElementById('authPage').style.display = 'none';
             document.getElementById('appPage').style.display = 'block';
             stockData = loadUserStockData();
+             localStorage.setItem(CURRENT_USER_KEY, currentUser.id);
+             loadOwnedAssets();
             updateWalletDisplay();
             showMarket('美股');
             startPriceUpdates();
@@ -1418,6 +1471,8 @@
                 saveUserStockData();
             }
             currentUser = null;
+            localStorage.removeItem(CURRENT_USER_KEY);
+            ownedAssets = [];
             stockData = cloneStockData();
             document.getElementById('appPage').style.display = 'none';
             document.getElementById('authPage').style.display = 'flex';
@@ -2067,6 +2122,26 @@
         function loadOwnedAssets() {
             if (!currentUser) return;
             ownedAssets = JSON.parse(localStorage.getItem('assets_' + currentUser.id) || '[]');
+        }
+
+        async function restoreUserSession() {
+            const storedId = localStorage.getItem(CURRENT_USER_KEY);
+            if (!storedId) return;
+            const remoteUser = await fetchSupabaseUserById(storedId);
+            if (!remoteUser) {
+                localStorage.removeItem(CURRENT_USER_KEY);
+                return;
+            }
+            currentUser = {
+                id: remoteUser.id,
+                name: remoteUser.name,
+                email: remoteUser.email,
+                password: remoteUser.password,
+                wallet: remoteUser.wallet,
+                createdAt: remoteUser.created_at
+            };
+            upsertLocalUser(currentUser);
+            showApp();
         }
 
         function saveOwnedAssets() {
