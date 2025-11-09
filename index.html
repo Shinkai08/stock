@@ -257,13 +257,6 @@
             flex-direction: column;
             gap: 10px;
             align-items: flex-end;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-        
-        .floating-menu.open .floating-actions {
-            max-height: 400px;
         }
         
         .floating-actions .floating-btn {
@@ -671,10 +664,10 @@
             <button class="modal-close" onclick="closeModal('tradeModal')">×</button>
             <h2 id="tradeStockName"></h2>
             <div class="chart-tabs" id="chartTabs">
-                <button class="chart-tab active" data-range="day" onclick="setChartRange('day')">天</button>
-                <button class="chart-tab" data-range="week" onclick="setChartRange('week')">周</button>
-                <button class="chart-tab" data-range="month" onclick="setChartRange('month')">月</button>
-                <button class="chart-tab" data-range="year" onclick="setChartRange('year')">年</button>
+                <button class="chart-tab active" data-range="day" onclick="setChartRange('day', this)">天</button>
+                <button class="chart-tab" data-range="week" onclick="setChartRange('week', this)">周</button>
+                <button class="chart-tab" data-range="month" onclick="setChartRange('month', this)">月</button>
+                <button class="chart-tab" data-range="year" onclick="setChartRange('year', this)">年</button>
             </div>
             <div class="chart-container">
                 <canvas id="stockChart"></canvas>
@@ -745,46 +738,46 @@
 
             <div id="carsSection">
                 <div class="asset-category">
-                    <h3>🚗 1-20万元车型</h3>
+                    <h3>🚗 1万-20万元车型</h3>
                     <div id="cars1" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🚙 20-100万元车型</h3>
+                    <h3>🚙 20万-100万元车型</h3>
                     <div id="cars2" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🏎️ 100-500万元车型</h3>
+                    <h3>🏎️ 100万-500万元车型</h3>
                     <div id="cars3" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🚘 500-1000万元车型</h3>
+                    <h3>🚘 500万-1000万元车型</h3>
                     <div id="cars4" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🏁 1000-20000万元车型</h3>
+                    <h3>🏁 1000万-2亿元车型</h3>
                     <div id="cars5" class="asset-grid"></div>
                 </div>
             </div>
 
             <div id="propertiesSection" style="display:none;">
                 <div class="asset-category">
-                    <h3>🏠 5-30万元房产</h3>
+                    <h3>🏠 5万-30万元房产</h3>
                     <div id="properties1" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🏡 30-100万元房产</h3>
+                    <h3>🏡 30万-100万元房产</h3>
                     <div id="properties2" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🏘️ 100-1000万元房产</h3>
+                    <h3>🏘️ 100万-1000万元房产</h3>
                     <div id="properties3" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🏰 1000-5000万元房产</h3>
+                    <h3>🏰 1000万-5000万元房产</h3>
                     <div id="properties4" class="asset-grid"></div>
                 </div>
                 <div class="asset-category">
-                    <h3>🏛️ 5000-100000万元房产</h3>
+                    <h3>🏛️ 5000万-10亿元房产</h3>
                     <div id="properties5" class="asset-grid"></div>
                 </div>
             </div>
@@ -965,19 +958,22 @@
                 { name: '劳斯莱斯古思特', price: 450.00, type: '英国豪华' },
                 { name: '玛莎拉蒂总裁', price: 143.80, type: '意大利' },
                 { name: '阿斯顿马丁DB11', price: 229.80, type: '英国跑车' },
-                { name: '宝马i7', price: 105.80, type: 'BBA新能源' }
-            ],
-            '1000-20000万': [
+                { name: '宝马i7', price: 105.80, type: 'BBA新能源' },
                 { name: '法拉利Roma', price: 238.00, type: '法拉利' },
                 { name: '兰博基尼Urus', price: 313.00, type: '兰博基尼' },
-                { name: '劳斯莱斯幻影', price: 790.00, type: '劳斯莱斯' },
-                { name: '布加迪Chiron', price: 2500.00, type: '布加迪' },
-                { name: '帕加尼Huayra', price: 2800.00, type: '帕加尼' },
-                { name: '柯尼塞格Agera', price: 2600.00, type: '柯尼塞格' },
+                { name: '路虎揽胜', price: 198.00, type: '路虎' },
+                { name: '劳斯莱斯幻影', price: 790.00, type: '劳斯莱斯' }, 
                 { name: '迈巴赫62S', price: 538.00, type: '迈巴赫' },
                 { name: '宾利慕尚', price: 498.00, type: '宾利' },
+            ],
+            '1000-20000万': [
+                { name: '布加迪Chiron', price: 2500.00, type: '布加迪' },
+                { name: '帕加尼Huayra', price: 2800.00, type: '帕加尼' },
+                { name: '帕加尼Zonda2026', price: 9800.00, type: '帕加尼' },
+                { name: '柯尼塞格Agera', price: 2600.00, type: '柯尼塞格' },
                 { name: '阿斯顿马丁One-77', price: 3500.00, type: '阿斯顿马丁' },
-                { name: '兰博基尼Aventador', price: 628.00, type: '兰博基尼' }
+                { name: '兰博基尼Revuelto', price: 1000.00, type: '兰博基尼' },
+                { name: '法拉利SP3', price: 1000.00, type: '法拉利' },
             ]
         };
 
@@ -1360,17 +1356,14 @@
             currentStock = { ...stock, market };
             
             document.getElementById('tradeStockName').textContent = `${stock.name} (${stock.symbol})`;
-            document.getElementById('tradeCurrentPrice').textContent = currentStock.price.toFixed(2);
-            const holdingShares = getHoldingShares(stock.symbol, market);
-            document.getElementById('tradeHoldingShares').textContent = holdingShares % 1 === 0 ? holdingShares : holdingShares.toFixed(2);
+            document.getElementById('tradeCurrentPrice').textContent = stock.price.toFixed(2);
             document.getElementById('tradeShares').value = '';
             document.getElementById('tradeTotalAmount').textContent = '0';
             
             document.getElementById('tradeModal').classList.add('active');
-            updateChartTabsActive();
             
             // 绘制图表
-            drawStockChart(currentStock);
+            drawStockChart(stock);
             
             // 监听股数输入
             document.getElementById('tradeShares').oninput = function() {
@@ -1380,48 +1373,17 @@
             };
         }
 
-        function setChartRange(range) {
-            currentChartRange = range;
-            updateChartTabsActive();
-            if (currentStock) {
-                drawStockChart(currentStock);
-            }
-        }
-
-        function updateChartTabsActive() {
-            const tabs = document.querySelectorAll('#chartTabs .chart-tab');
-            tabs.forEach(tab => {
-                const isActive = tab.dataset.range === currentChartRange;
-                tab.classList.toggle('active', isActive);
-            });
-        }
-
-        function getChartRangeConfig() {
-            const hour = 60 * 60 * 1000;
-            const day = 24 * hour;
-            const configs = {
-                day: { points: 24, interval: hour, volatility: 0.01, label: ts => `${new Date(ts).getHours()}:00` },
-                week: { points: 7, interval: day, volatility: 0.02, label: ts => new Date(ts).toLocaleDateString() },
-                month: { points: 30, interval: day, volatility: 0.03, label: ts => new Date(ts).toLocaleDateString() },
-                year: { points: 12, interval: 30 * day, volatility: 0.05, label: ts => `${new Date(ts).getFullYear()}/${new Date(ts).getMonth() + 1}` }
-            };
-            return configs[currentChartRange] || configs.day;
-        }
-
         function drawStockChart(stock) {
             const ctx = document.getElementById('stockChart');
-            const config = getChartRangeConfig();
             
             // 生成模拟历史数据
             const data = [];
             let basePrice = stock.price;
-            for (let i = config.points - 1; i >= 0; i--) {
-                const timestamp = Date.now() - i * config.interval;
-                const change = (Math.random() - 0.5) * basePrice * config.volatility;
-                basePrice = Math.max(basePrice + change, stock.price * 0.5);
-                const label = config.label(timestamp);
+            for (let i = 30; i >= 0; i--) {
+                const change = (Math.random() - 0.5) * basePrice * 0.05;
+                basePrice = Math.max(basePrice + change, stock.price * 0.8);
                 data.push({
-                    label,
+                    date: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toLocaleDateString(),
                     price: basePrice
                 });
             }
@@ -1434,7 +1396,7 @@
             stockChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.map(d => d.label),
+                    labels: data.map(d => d.date),
                     datasets: [{
                         label: '价格',
                         data: data.map(d => d.price),
@@ -1597,13 +1559,6 @@
             });
         }
 
-        function getHoldingShares(symbol, market) {
-            if (!currentUser) return 0;
-            const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
-            const holding = holdings.find(h => h.symbol === symbol && h.market === market);
-            return holding ? holding.shares : 0;
-        }
-
         // 加载持仓
         function loadHoldings() {
             const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
@@ -1645,16 +1600,12 @@
                     </div>
                 `;
                 
-                const stockInfo = stock ? stock : { ...holding, price: currentPrice };
-                item.onclick = () => openTradeModal(stockInfo, holding.market);
-                
                 listEl.appendChild(item);
             });
         }
 
         // 个人资料
         function openProfile() {
-            closeFloatingMenu();
             document.getElementById('profileName').textContent = currentUser.name;
             document.getElementById('profileEmail').textContent = currentUser.email;
             document.getElementById('profileWallet').textContent = currentUser.wallet.toFixed(2);
@@ -1693,7 +1644,6 @@
 
         // 资产购买
         function openAssets() {
-            closeFloatingMenu();
             document.getElementById('assetsModal').classList.add('active');
             renderAssets();
         }
@@ -1757,72 +1707,6 @@
                     
                     container.appendChild(card);
                 });
-            });
-        }
-
-        function openLeaderboard() {
-            closeFloatingMenu();
-            renderLeaderboard();
-            document.getElementById('leaderboardModal').classList.add('active');
-        }
-
-        function renderLeaderboard() {
-            const listEl = document.getElementById('leaderboardList');
-            const users = JSON.parse(localStorage.getItem('users') || '[]');
-            
-            if (users.length === 0) {
-                listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">暂无用户数据</div>';
-                return;
-            }
-            
-            const rankings = users.map(user => {
-                const wallet = Number(user.wallet || 0);
-                const holdings = JSON.parse(localStorage.getItem('holdings_' + user.id) || '[]');
-                const owned = JSON.parse(localStorage.getItem('assets_' + user.id) || '[]');
-                const userStockData = JSON.parse(localStorage.getItem('stockData_' + user.id) || 'null') || cloneStockData();
-                
-                let stockAssets = 0;
-                holdings.forEach(holding => {
-                    const marketStocks = userStockData[holding.market] || [];
-                    const stock = marketStocks.find(s => s.symbol === holding.symbol);
-                    const currentPrice = stock ? stock.price : holding.avgPrice;
-                    stockAssets += holding.shares * currentPrice;
-                });
-                
-                let physicalAssets = 0;
-                owned.forEach(asset => {
-                    physicalAssets += (asset.price || 0) * 10000;
-                });
-                
-                const totalAssets = wallet + stockAssets + physicalAssets;
-                
-                return {
-                    id: user.id,
-                    name: user.name || user.email || '未命名用户',
-                    total: totalAssets
-                };
-            }).sort((a, b) => b.total - a.total);
-            
-            listEl.innerHTML = '';
-            
-            rankings.forEach((user, index) => {
-                const item = document.createElement('div');
-                item.className = 'leaderboard-item';
-                item.innerHTML = `
-                    <div>
-                        <span style="color:#667eea; margin-right:8px;">#${index + 1}</span>
-                        ${user.name}
-                    </div>
-                    <div>¥${formatCurrency(user.total)}</div>
-                `;
-                listEl.appendChild(item);
-            });
-        }
-
-        function formatCurrency(value) {
-            return Number(value || 0).toLocaleString('zh-CN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
             });
         }
 
