@@ -102,6 +102,35 @@
             font-weight: 600;
         }
         
+        .auth-leaderboard-btn {
+            margin-top: 25px;
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: none;
+            background: #f4f5ff;
+            color: #5b5fda;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.3);
+            transition: all 0.25s ease;
+        }
+        
+        .auth-leaderboard-btn span {
+            font-size: 20px;
+        }
+        
+        .auth-leaderboard-btn:hover {
+            background: #667eea;
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.35);
+            transform: translateY(-1px);
+        }
+        
         /* 主应用界面 */
         .app-container {
             display: none;
@@ -336,6 +365,76 @@
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
+        }
+        
+        .confirm-modal .modal-content {
+            max-width: 420px;
+            text-align: center;
+        }
+        
+        .confirm-title {
+            margin-bottom: 10px;
+            font-size: 22px;
+        }
+        
+        .confirm-message {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+        
+        .confirm-btn {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .confirm-cancel {
+            background: #e0e0e0;
+            color: #555;
+        }
+        
+        .confirm-ok {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        
+        .toast {
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            opacity: 0;
+            animation: fadeToast 3s ease forwards;
+        }
+        
+        @keyframes fadeToast {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-10px); }
         }
         
         .modal-close {
@@ -602,6 +701,9 @@
                 <span id="authSwitchText">还没有账号？</span>
                 <a href="#" id="authSwitchLink">立即注册</a>
             </div>
+            <button type="button" class="auth-leaderboard-btn" onclick="openLeaderboard()">
+                <span>🏆</span>查看资产排行榜
+            </button>
         </div>
     </div>
 
@@ -792,6 +894,21 @@
             <div id="leaderboardList" class="leaderboard-list"></div>
         </div>
     </div>
+
+    <!-- 通用确认模态框 -->
+    <div id="confirmModal" class="modal confirm-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="handleConfirmResponse(false)">×</button>
+            <h3 class="confirm-title" id="confirmTitle">确认操作</h3>
+            <div class="confirm-message" id="confirmMessage">确定执行此操作吗？</div>
+            <div class="confirm-actions">
+                <button class="confirm-btn confirm-cancel" id="confirmCancelBtn" onclick="handleConfirmResponse(false)">取消</button>
+                <button class="confirm-btn confirm-ok" id="confirmOkBtn" onclick="handleConfirmResponse(true)">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container"></div>
 
     <script>
         // 数据定义
@@ -1092,6 +1209,8 @@
         let priceUpdateTimer = null;
         let stockData = cloneStockData();
         let currentChartRange = 'day';
+        let confirmDialogHandler = null;
+        let confirmDialogTexts = { confirm: '确定', cancel: '取消' };
 
         function cloneStockData() {
             return JSON.parse(JSON.stringify(baseStockData));
@@ -1106,6 +1225,43 @@
         function saveUserStockData() {
             if (!currentUser) return;
             localStorage.setItem('stockData_' + currentUser.id, JSON.stringify(stockData));
+        }
+
+        function showConfirmDialog(options = {}) {
+            const modal = document.getElementById('confirmModal');
+            if (!modal) return;
+            document.getElementById('confirmTitle').textContent = options.title || '确认操作';
+            document.getElementById('confirmMessage').innerHTML = options.message || '确定执行此操作吗？';
+            const okBtn = document.getElementById('confirmOkBtn');
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            if (okBtn) okBtn.textContent = options.confirmText || '确定';
+            if (cancelBtn) cancelBtn.textContent = options.cancelText || '取消';
+            confirmDialogHandler = typeof options.onConfirm === 'function' ? options.onConfirm : null;
+            modal.classList.add('active');
+        }
+
+        function handleConfirmResponse(isConfirmed) {
+            const modal = document.getElementById('confirmModal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+            const callback = confirmDialogHandler;
+            confirmDialogHandler = null;
+            if (isConfirmed && typeof callback === 'function') {
+                callback();
+            }
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            if (!container || !message) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
 
         // 初始化
@@ -1427,21 +1583,53 @@
             const shares = parseFloat(document.getElementById('tradeShares').value);
             
             if (!shares || shares <= 0) {
-                alert('请输入有效的股数！');
+                showToast('请输入有效的股数');
                 return;
             }
             
             const total = shares * currentStock.price;
+            const actionText = type === 'buy' ? '买入' : '卖出';
+            
+            if (type === 'buy' && total > currentUser.wallet) {
+                showToast('余额不足');
+                return;
+            }
+            
+            if (type === 'sell') {
+                const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
+                const holding = holdings.find(h => h.symbol === currentStock.symbol && h.market === currentStock.market);
+                if (!holding || holding.shares < shares) {
+                    showToast('持股数量不足');
+                    return;
+                }
+            }
+            
+            const message = `
+                确定要${actionText}<strong>${currentStock.name} (${currentStock.symbol})</strong>吗？
+                <br>数量：<strong>${shares}</strong> 股
+                <br>单价：¥${currentStock.price.toFixed(2)}
+                <br>总金额：<strong>¥${total.toFixed(2)}</strong>
+            `;
+            
+            showConfirmDialog({
+                title: `确认${actionText}`,
+                message,
+                confirmText: actionText,
+                cancelText: '取消',
+                onConfirm: () => finalizeTrade(type, shares, total)
+            });
+        }
+
+        function finalizeTrade(type, shares, total) {
+            const actionText = type === 'buy' ? '买入' : '卖出';
             
             if (type === 'buy') {
                 if (total > currentUser.wallet) {
-                    alert('余额不足！');
+                    showToast('余额不足');
                     return;
                 }
-                
                 currentUser.wallet -= total;
                 
-                // 添加持仓
                 const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
                 const existing = holdings.find(h => h.symbol === currentStock.symbol && h.market === currentStock.market);
                 
@@ -1461,7 +1649,6 @@
                 
                 localStorage.setItem('holdings_' + currentUser.id, JSON.stringify(holdings));
                 
-                // 添加交易记录
                 const transactions = JSON.parse(localStorage.getItem('transactions_' + currentUser.id) || '[]');
                 transactions.unshift({
                     type: 'buy',
@@ -1474,14 +1661,12 @@
                     date: new Date().toISOString()
                 });
                 localStorage.setItem('transactions_' + currentUser.id, JSON.stringify(transactions));
-                
-                alert('买入成功！');
-            } else if (type === 'sell') {
+            } else {
                 const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
                 const holding = holdings.find(h => h.symbol === currentStock.symbol && h.market === currentStock.market);
                 
                 if (!holding || holding.shares < shares) {
-                    alert('持股数量不足！');
+                    showToast('持股数量不足');
                     return;
                 }
                 
@@ -1495,7 +1680,6 @@
                 
                 localStorage.setItem('holdings_' + currentUser.id, JSON.stringify(holdings));
                 
-                // 添加交易记录
                 const transactions = JSON.parse(localStorage.getItem('transactions_' + currentUser.id) || '[]');
                 transactions.unshift({
                     type: 'sell',
@@ -1508,11 +1692,8 @@
                     date: new Date().toISOString()
                 });
                 localStorage.setItem('transactions_' + currentUser.id, JSON.stringify(transactions));
-                
-                alert('卖出成功！');
             }
             
-            // 更新用户数据
             const users = JSON.parse(localStorage.getItem('users') || '[]');
             const userIndex = users.findIndex(u => u.id === currentUser.id);
             if (userIndex !== -1) {
@@ -1522,6 +1703,7 @@
             
             updateWalletDisplay();
             closeModal('tradeModal');
+            showToast(`${actionText}成功！`);
         }
 
         // 加载交易历史
@@ -1710,45 +1892,138 @@
             });
         }
 
+        function openLeaderboard() {
+            const modal = document.getElementById('leaderboardModal');
+            if (!modal) return;
+            closeFloatingMenu();
+            renderLeaderboard();
+            modal.classList.add('active');
+        }
+
+        function renderLeaderboard() {
+            const listEl = document.getElementById('leaderboardList');
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            if (!listEl) return;
+            
+            if (users.length === 0) {
+                listEl.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">暂无用户数据</div>';
+                return;
+            }
+            
+            const rankings = users.map(user => {
+                const wallet = Number(user.wallet || 0);
+                const holdings = JSON.parse(localStorage.getItem('holdings_' + user.id) || '[]');
+                const owned = JSON.parse(localStorage.getItem('assets_' + user.id) || '[]');
+                const userStockData = safeGetUserStockData(user.id);
+                
+                let stockAssets = 0;
+                holdings.forEach(holding => {
+                    const marketStocks = userStockData[holding.market] || [];
+                    const stock = marketStocks.find(s => s.symbol === holding.symbol);
+                    const currentPrice = stock ? stock.price : holding.avgPrice;
+                    stockAssets += holding.shares * currentPrice;
+                });
+                
+                let physicalAssets = 0;
+                owned.forEach(asset => {
+                    physicalAssets += (asset.price || 0) * 10000;
+                });
+                
+                const totalAssets = wallet + stockAssets + physicalAssets;
+                
+                return {
+                    id: user.id,
+                    name: user.name || user.email || '未命名用户',
+                    total: totalAssets
+                };
+            }).sort((a, b) => b.total - a.total);
+            
+            listEl.innerHTML = '';
+            
+            rankings.forEach((user, index) => {
+                const item = document.createElement('div');
+                item.className = 'leaderboard-item';
+                item.innerHTML = `
+                    <div>
+                        <span style="color:#667eea; margin-right:8px;">#${index + 1}</span>
+                        ${user.name}
+                    </div>
+                    <div>¥${formatCurrency(user.total)}</div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function safeGetUserStockData(userId) {
+            try {
+                const stored = localStorage.getItem('stockData_' + userId);
+                return stored ? JSON.parse(stored) : cloneStockData();
+            } catch (err) {
+                console.error('解析用户行情数据失败:', err);
+                return cloneStockData();
+            }
+        }
+
+        function formatCurrency(value) {
+            return Number(value || 0).toLocaleString('zh-CN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
         function purchaseAsset(type, asset) {
             const isOwned = ownedAssets.some(a => a.type === type && a.name === asset.name);
             
             if (isOwned) {
-                alert('您已经拥有这项资产了！');
+                showToast('您已经拥有这项资产了');
                 return;
             }
             
             const price = asset.price * 10000; // 转换为元
             
             if (price > currentUser.wallet) {
-                alert('余额不足！');
+                showToast('余额不足');
+                return;
+            }
+
+            showConfirmDialog({
+                title: '确认购买',
+                message: `确定要购买 <strong>${asset.name}</strong> 吗？<br>价格：<strong>¥${asset.price}万</strong>`,
+                confirmText: '购买',
+                cancelText: '取消',
+                onConfirm: () => finalizeAssetPurchase(type, asset)
+            });
+        }
+
+        function finalizeAssetPurchase(type, asset) {
+            const price = asset.price * 10000;
+            if (price > currentUser.wallet) {
+                showToast('余额不足');
                 return;
             }
             
-            if (confirm(`确定要购买 ${asset.name} 吗？价格：¥${asset.price}万`)) {
-                currentUser.wallet -= price;
-                
-                ownedAssets.push({
-                    type: type,
-                    name: asset.name,
-                    price: asset.price,
-                    purchaseDate: new Date().toISOString()
-                });
-                
-                saveOwnedAssets();
-                
-                // 更新用户数据
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                const userIndex = users.findIndex(u => u.id === currentUser.id);
-                if (userIndex !== -1) {
-                    users[userIndex] = currentUser;
-                    localStorage.setItem('users', JSON.stringify(users));
-                }
-                
-                updateWalletDisplay();
-                renderAssets();
-                alert('购买成功！');
+            currentUser.wallet -= price;
+            
+            ownedAssets.push({
+                type: type,
+                name: asset.name,
+                price: asset.price,
+                purchaseDate: new Date().toISOString()
+            });
+            
+            saveOwnedAssets();
+            
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const userIndex = users.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) {
+                users[userIndex] = currentUser;
+                localStorage.setItem('users', JSON.stringify(users));
             }
+            
+            updateWalletDisplay();
+            renderAssets();
+            showToast('购买成功！');
         }
 
         function loadOwnedAssets() {
