@@ -1218,6 +1218,7 @@
         let currentChartRange = 'day';
         let confirmDialogHandler = null;
         let confirmDialogTexts = { confirm: '确定', cancel: '取消' };
+        let leaderboardInterval = null;
 
         function cloneStockData() {
             return JSON.parse(JSON.stringify(baseStockData));
@@ -1276,6 +1277,7 @@
             initAuth();
             loadOwnedAssets();
             restoreUserSession();
+            startLeaderboardAutoRefresh();
         };
         // 认证相关
         function initAuth() {
@@ -1619,6 +1621,8 @@
             
             document.getElementById('tradeStockName').textContent = `${stock.name} (${stock.symbol})`;
             document.getElementById('tradeCurrentPrice').textContent = stock.price.toFixed(2);
+            const heldShares = getHoldingShares(stock.symbol, market);
+            document.getElementById('tradeHoldingShares').textContent = heldShares;
             document.getElementById('tradeShares').value = '';
             document.getElementById('tradeTotalAmount').textContent = '0';
             
@@ -1847,6 +1851,13 @@
             });
         }
 
+        function getHoldingShares(symbol, market) {
+            if (!currentUser) return 0;
+            const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
+            const found = holdings.find(h => h.symbol === symbol && h.market === market);
+            return found ? found.shares : 0;
+        }
+
         // 加载持仓
         function loadHoldings() {
             const holdings = JSON.parse(localStorage.getItem('holdings_' + currentUser.id) || '[]');
@@ -1887,6 +1898,8 @@
                         <div>市值: ¥${totalValue.toFixed(2)} | 盈亏: <span style="color:${profitColor}">${profitPercent}%</span></div>
                     </div>
                 `;
+                const stockInfo = stock ? { ...stock } : { ...holding, price: currentPrice };
+                item.onclick = () => openTradeModal(stockInfo, holding.market);
                 
                 listEl.appendChild(item);
             });
@@ -2056,6 +2069,16 @@
                 `;
                 listEl.appendChild(item);
             });
+        }
+
+        function startLeaderboardAutoRefresh() {
+            if (leaderboardInterval) {
+                clearInterval(leaderboardInterval);
+            }
+            renderLeaderboard();
+            leaderboardInterval = setInterval(() => {
+                renderLeaderboard();
+            }, 30000);
         }
 
         function formatCurrency(value) {
